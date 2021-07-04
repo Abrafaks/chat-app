@@ -15,6 +15,7 @@ const messageTemplate = document.querySelector("#message-template").innerHTML;
 const locationMessageTemplate = document.querySelector(
   "#location-message-template"
 ).innerHTML;
+const sidebarTemplate = document.querySelector("#sidebar-template").innerHTML;
 
 // Options
 // ignoreQueryPrefix makes sure the ? goes away
@@ -26,7 +27,9 @@ const { username, room } = Qs.parse(location.search, {
 // getting message
 socket.on("message", (message) => {
   console.log(message);
+
   const html = Mustache.render(messageTemplate, {
+    username: message.username,
     message: message.text,
     createdAt: moment(message.createdAt).format("h:mm a"),
   });
@@ -36,10 +39,19 @@ socket.on("message", (message) => {
 // getting location
 socket.on("locationMessage", (url) => {
   const html = Mustache.render(locationMessageTemplate, {
+    username: url.username,
     url: url.url,
     createdAt: moment(url.createdAt).format("h:mm a"),
   });
   $messages.insertAdjacentHTML("beforeend", html);
+});
+
+socket.on("roomData", ({ room, users } = {}) => {
+  const html = Mustache.render(sidebarTemplate, {
+    room,
+    users,
+  });
+  document.querySelector("#sidebar").innerHTML = html;
 });
 
 $messageForm.addEventListener("submit", (e) => {
@@ -88,4 +100,9 @@ $sendLocationButton.addEventListener("click", () => {
   });
 });
 
-socket.emit("join", { username, room }, (error) => {});
+socket.emit("join", { username, room }, (error) => {
+  if (error) {
+    alert(error);
+    location.href = "/";
+  }
+});
